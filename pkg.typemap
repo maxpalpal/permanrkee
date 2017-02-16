@@ -1,0 +1,7 @@
+TYPEMAP
+Gtk::ExText::Highlight::Table T_SimpleVal
+Gtk::ExText::Highlight::SyntaxEntry T_SimpleVal
+Gtk::ExText::Highlight::PatternEntry T_SimpleVal
+Gtk::ExText::Highlight::Table_OrNULL_OrNULL T_SimpleVal_OrNULL
+Gtk::ExText::Highlight::SyntaxEntry_OrNULL T_SimpleVal_OrNULL
+Gtk::ExText::Highlight::PatternEntry_OrNULL T_SimpleVal_OrNULL
