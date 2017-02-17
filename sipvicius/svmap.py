@@ -20,8 +20,7 @@ __GPL__ = """
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from libs.svhelper import __author__, __version__
-__prog__ = "svmap"
+
 
 import socket
 import select
