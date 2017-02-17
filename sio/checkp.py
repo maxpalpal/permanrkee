@@ -37,7 +37,7 @@ def check_proxy(proxy):
 
 def check_args():
     SAVE_ALIVE = False
-    file_path = "prox.txt"
+    file_path = "../sio/prox.txt"
     
     for arg in sys.argv:
         if arg.lower() == "-o":
@@ -50,8 +50,8 @@ def check_args():
 SAVE_ALIVE, file_path = check_args()
 
 if SAVE_ALIVE:
-    SAVE_ALIVE_PROXY_F = open("alive.txt", "a")
-file_path = "prox.txt"
+    SAVE_ALIVE_PROXY_F = open("../sio/alive.txt", "a")
+file_path = "../sio/prox.txt"
 for proxy in get_list_from_file(file_path):
     if proxy != "" or proxy != "\n":
         start = time.time()
