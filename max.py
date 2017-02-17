@@ -1,66 +1,129 @@
-#!/bin/python
-#encoding = utf-8
+'''
+    Proxy Checker v2
+        -=m0dem=-
 
-import urllib2, socket
-import sys, re
+    Requirements:
+        requests (HTTP library)
+'''
 
+from Queue import Queue
+from threading import Thread
 
-try:
-    import requests
-except:
-    print "Os componentes necessarios nao foram encontradas. Instale para seguir adiante\n"
-    sys.exit()
-
-wordlist = sys.argv[1]
-socket.setdefaulttimeout(5)
-sys.tracebacklimit = 0
-
-print "\n################################################"
-print "#     _              _     _                   #"
-print "#    | | ___   ___  | |   (_)_ __  _   ___  __ #"
-print "# _  | |/ _ \ / _ \ | |   | | '_ \| | | \ \/ / #"
-print "#| |_| | (_) |  __/ | |___| | | | | |_| |>  <  #"
-print "# \___/ \___/ \___| |_____|_|_| |_|\__,_/_/\_\ #"
-print "#                                              #"
-print "# Desenvolvido por Joseph Linux                #"
-print "# Proxy Alive Checker                          #"
-print "# www.telegram.me/linuxteambr - TLB Sec        #"
-print "################################################\n\n"
-
-print '------------------------------------------------'
-print 'Uso: python proxy.py <proxylist.txt>'
-print 'Formado IP:PORTA'
-print 'Proxy Alive Checker'
-print '------------------------------------------------'
-
-# ler lista de proxys
+import argparse
+import requests
+import sys
+import time
 
 
-
-proxyList = open(wordlist, 'r').readlines()
-
-print "**Lendo Proxys**"
-print "....."
-
-len(proxyList)
+def process_proxy():
+    try:
+        while True:
+            proxy = queue.get()
+            if proxy == "STOP":
+                return
             
-def is_bad_proxy(pip):    
-    try:        
-        proxy_handler = urllib2.ProxyHandler({'http': pip})        
-        opener = urllib2.build_opener(proxy_handler)
-        opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009022111 Gentoo Firefox/3.0.6')]
-        urllib2.install_opener(opener)        
-        req=urllib2.Request('http://createssh.com')
-        sock=urllib2.urlopen(req)
-    except urllib2.HTTPError, e:        
-             return e.code
-    except Exception:
-             return 1
+            save_valid_proxy(check_proxy(proxy))
+            queue.task_done()
 
-for item in proxyList:
-    if is_bad_proxy(item):
-	print "#ProxyChecker JoeLinux :(", item
+    except:
+        pass
+
+def check_proxy(proxy, timeout = 5):
+    proxies = {
+            "http": "http://" + proxy,
+            "https": "https://" + proxy
+    }
+    try:
+        # see if the proxy actually works
+        ip = get_external_ip(proxies = proxies)          
+        if ip == ORIG_IP:
+            if VERBOSE:
+                print(ip)
+                
+            return False
+
+    except IOError:
+        return False
+                
+    return proxy
+
+def save_valid_proxy(proxy):
+    if proxy:
+        OUT_F.write(proxy + "\n")
+
+def get_external_ip(proxies = None):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    if proxies:
+        r = requests.get(IP_CHECK, proxies = proxies, headers = headers)
+
     else:
-        print "#ProxyChecker JoeLinux :D", item
+        r = requests.get(IP_CHECK, headers = headers)
+        
+    return str(r.text)
 
 
+DEFAULT_THREADS = 200
+IP_CHECK = "https://api.ipify.org"
+IN_F = None
+OUT_F = None
+VERBOSE = False
+ORIG_IP = None
+
+
+if __name__ == "__main__":
+    # handle all the command-line argument stuff
+    parser = argparse.ArgumentParser(description = "Check a proxy list for working proxies.")
+    parser.add_argument("infile", type = str, help = "input proxy list file")
+    parser.add_argument("outfile", type = str, help = "output proxy list file")
+    parser.add_argument("-t", "--threads", type = int, default = DEFAULT_THREADS, help = "set the number of threads running concurrently (default {})".format(DEFAULT_THREADS))
+    parser.add_argument("-v", "--verbose", action = "store_true", help = "say lots of useless stuff (sometimes)")
+    args = parser.parse_args()
+
+    try:
+        IN_F = open(args.infile, "r")
+
+    except IOError:
+        print("Invalid proxy list filename.")
+        sys.exit()
+
+    OUT_F = open(args.outfile, "w")
+        
+    # number of threads running at once
+    CONCURRENT_THREADS = args.threads
+
+    if args.verbose:
+        VERBOSE = True
+        print("Loading proxy list from: {}".format(args.infile))
+        print("Saving valid proxies list to: {}".format(args.outfile))
+        print("Running: {} threads...".format(CONCURRENT_THREADS))
+        
+    # let's begin the whole process
+    ORIG_IP = get_external_ip()
+    if VERBOSE:
+        print("Your original external IP address is: {}".format(ORIG_IP))
+        print("Checking proxies...")
+    
+    queue = Queue(CONCURRENT_THREADS * 2)
+
+    for i in range(0, CONCURRENT_THREADS):
+        thread = Thread(target = process_proxy)
+        thread.daemon = True
+        thread.start()
+
+    start = time.time()
+    try:
+        for proxy in IN_F:
+            queue.put(proxy.strip())
+
+        # queue.join()
+
+    except KeyboardInterrupt:
+        pass
+
+    # make sure everything is closed down
+    print("Closing down, please wait. ({} seconds run time)".format(time.time() - start))
+    queue.put("STOP")
+
+    IN_F.close()
+    OUT_F.close()
+    sys.exit()
