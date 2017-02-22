@@ -1,0 +1,7 @@
+Usage: svcrack.py -u username [options] target
+examples:
+svcrack.py -u100 -d dictionary.txt 10.0.0.1
+svcrack.py -u100 -r1-9999 -z4 10.0.0.1
+
+
+svcrack.py: error: no such option: -w
